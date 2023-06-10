@@ -250,6 +250,23 @@ int32_t hex_viewer_app(void* p) {
                     if(!hex_viewer_read_file(hex_viewer)) break;
                 }
                 furi_mutex_release(hex_viewer->mutex);
+            } else if(input.key == InputKeyOk) {
+                furi_check(furi_mutex_acquire(hex_viewer->mutex, FuriWaitForever) == FuriStatusOk);
+                uint32_t last_byte_on_screen =
+                    hex_viewer->model->file_offset + hex_viewer->model->file_read_bytes;
+
+                if(hex_viewer->model->file_size > last_byte_on_screen) {
+                    uint32_t bytes_left_offscreen = hex_viewer->model->file_size -
+                                                    hex_viewer->model->file_offset -
+                                                    hex_viewer->model->file_read_bytes;
+                    uint32_t lines_to_scroll =
+                        MIN(HEX_VIEWER_LINES_ON_SCREEN,
+                            (bytes_left_offscreen + HEX_VIEWER_BYTES_PER_LINE - 1) /
+                                HEX_VIEWER_BYTES_PER_LINE);
+                    hex_viewer->model->file_offset += lines_to_scroll * HEX_VIEWER_BYTES_PER_LINE;
+                    if(!hex_viewer_read_file(hex_viewer)) break;
+                }
+                furi_mutex_release(hex_viewer->mutex);
             } else if(input.key == InputKeyLeft) {
                 furi_check(furi_mutex_acquire(hex_viewer->mutex, FuriWaitForever) == FuriStatusOk);
                 hex_viewer->model->mode = !hex_viewer->model->mode;
